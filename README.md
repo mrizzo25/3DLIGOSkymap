@@ -27,7 +27,8 @@ source.
 
 All of the fits used to generate these contours was pre-computed in python using existing 
 code for generating LIGO skymaps. The contour data was then saved to csv files to be used 
-for dynamic contour plotting. 
+for dynamic contour plotting. Right now there are only three GW events to choose from; more 
+will be added as data is processed. 
 
 
 ## Visualizing Localization Contours
