@@ -28,8 +28,8 @@ function defineParams(){
                 this.z_data;
 
 
-		//this.smap_contour;
-		//this.contour_text_url;
+		this.smap_contour;
+		this.contour_uri;
 
 
 		this.integral_x;

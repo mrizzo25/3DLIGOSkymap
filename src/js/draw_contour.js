@@ -36,14 +36,6 @@ function calcCI() {
 	var level = linInterp(params.ci/100., params.integral, params.integral_x);
 
 
-	console.log(params.integral);
-	console.log(params.integral_x);
-	console.log(level);
-
-	var d3 = Plotly.d3;
-	var img_jpg= d3.select('#jpg-export');
-
-
 	var data = [{
 	
 		z: params.z_data, 
@@ -87,20 +79,8 @@ function calcCI() {
 	};
 
 
-	var contour_fname = params.event_name+"_"+params.ci+"_contour.png"
-	Plotly.newPlot('plotlyChart', data, layout).then( function(gd) {
-      
-		Plotly.toImage(gd, {width: 8192., height: 4095.})
-         .then( function(url) {
-             	img_jpg.attr("src", url);
-
-		saveFile(url.replace('image/png', 'image/octet-stream'), contour_fname);
-
-		//return Plotly.toImage(gd,{format:'jpeg',height:300,width:300});
-         	}
-         )
-    	});
-
+	var gd = Plotly.newPlot('plotlyChart', data, layout);
+	return gd;
 };
 
 
@@ -108,14 +88,10 @@ function calcCI() {
 
 
 //this will draw the scene (with lighting)
-function drawScene(){
+function drawScene(uri){
 
 
-	var contour_fname = "src/textures/"+params.event_name+"_"+params.
-ci+"_contour.png"
-
-
-	smap_contour = new THREE.TextureLoader().load(contour_fname);
+	smap_contour = new THREE.TextureLoader().load(uri);
 	
 
         smap = new THREE.TextureLoader().load("src/textures/shifted_star_map.jpg");
@@ -123,45 +99,30 @@ ci+"_contour.png"
         
 	//draw the sphere
         params.material = new THREE.MeshBasicMaterial( {
-                //emissive: 0x072534, 
                 side: THREE.DoubleSide,
-                //flatShading: false,
                 map: smap,
-                //transparent: false, 
-                //opacity: 1.0
                 });
         params.drawSphere();
 
 
-
-
 	//draw the sphere
         params.contour_material = new THREE.MeshBasicMaterial( {
-                //emissive: 0x072534,
                 side: THREE.BackSide,
                 transparent: true,
                 opacity: 0.8,
-                //color: 0xFF0000,
-                //flatShading: false,
                 map: smap_contour,
-                //transparent: false,
-                //opacity: 1.0
                 });
         params.drawContourSphere();
+
 
 	if (params.rd_axes == true) {
 		smap_axes = new THREE.TextureLoader().load("src/textures/celestial_grid_shifted.png");
 	
 		params.axes_material = new THREE.MeshBasicMaterial( {
-                //emissive: 0x072534,
                 	side: THREE.BackSide,
                 	transparent: true,
                 	opacity: 0.9,
-                	//color: 0xFF0000,
-                	//flatShading: false,
                 	map: smap_axes,
-                	//transparent: false,
-                	//opacity: 1.0
                 	});
         	params.drawAxesSphere();
 	
@@ -170,74 +131,106 @@ ci+"_contour.png"
 	else {
 	
 		params.axes_material = new THREE.MeshBasicMaterial( {
-                //emissive: 0x072534,
-                        //side: THREE.BackSide,
-                        transparent: true,
-                        opacity: 0.9,
-                        //color: 0xFF0000,
-                        //flatShading: false,
-                        //map: smap_axes,
-                        //transparent: false,
-                        //opacity: 1.0
-                        });
+                         transparent: true,
+                        opacity: 0.9});
                 params.drawAxesSphere();
 	
 	}
 
-        //lights
-        //var lights = [];
-        //lights[ 0 ] = new THREE.PointLight( 0xffffff, 1, 0 );
-        //lights[ 1 ] = new THREE.PointLight( 0xffffff, 1, 0 );
-        //lights[ 2 ] = new THREE.PointLight( 0xffffff, 1, 0 );
-
-        //lights[ 0 ].position.set( 0, 200, 0 );
-        // lights[ 1 ].position.set( 100, 200, 100 );
-        // lights[ 2 ].position.set( - 100, - 200, - 100 );
-
-        //lights.forEach(function(element){
-        //      params.scene.add(element);
-        //})
-
+        
 
 }
 
-function checkImg(){
+
+function drawContour(uri) {
+
+	smap_contour = new THREE.TextureLoader().load(uri);
+
+	//draw contour sphere
+        params.contour_material = new THREE.MeshBasicMaterial( {
+                side: THREE.BackSide,
+                transparent: true,
+                opacity: 0.8,
+                map: smap_contour,
+                });
+        params.drawContourSphere();
+}
+
+function generateTexture(){
 
 	return new Promise(function (resolve, reject){
 	
-		console.log("Checking image");
-		const img = new Image();
-		img.src = "src/textures/"+params.event_name+"_"+params.ci+"_contour.png";
-		img.onload = () => resolve("Image Exists");
-		img.onerror = () => reject("Image does not exist");
-	
+		console.log("Creating new texture");
+		var gd = calcCI();
+		resolve(gd);
 	});
 };
 
 
-
 function drawAll(){
 	
+	let checkPromise = generateTexture();
 
-	let checkPromise = checkImg();
-
-	checkPromise.then(function(result){
+	checkPromise.then(function (result) {
 		console.log(result);
-		}, 
-	function(error){
-	
-		console.log(error);
-		calcCI();
+		url = Plotly.toImage(result, {width: 8192., height: 4095.});
+		return url;
 
-	}).then(function(result){
+	}).then(function(result) {
+
 		console.log("drawing");
-		setTimeout(drawScene, 3000);
-	
-	}, function(error){
-	
+		console.log(result);
+		drawScene(result);
 	});
 
 }
 
 
+//On parameter update, redraw contour
+function redrawContour(){
+
+	let checkPromise = generateTexture();
+	
+	checkPromise.then(function (result) {
+                console.log(result);
+                url = Plotly.toImage(result, {width: 8192., height: 4095.});
+                return url;
+
+        }).then(function(result) {
+
+                console.log("drawing");
+                console.log(result);
+                drawContour(result);
+        });
+
+}
+
+
+//On parameter update: redraw Ra/Dec axes
+function redrawAxes(){
+
+	if (params.rd_axes == true) {
+        
+		smap_axes = new THREE.TextureLoader().load("src/textures/celestial_grid_shifted.png");
+
+                params.axes_material = new THREE.MeshBasicMaterial( {
+                        side: THREE.BackSide,
+                        transparent: true,
+                        opacity: 0.9,
+                        map: smap_axes,
+                        });
+                params.drawAxesSphere();
+
+        }
+
+        else {
+
+                params.axes_material = new THREE.MeshBasicMaterial( {
+                         transparent: true,
+                        opacity: 0.9});
+                params.drawAxesSphere();
+
+        }
+
+}
 
